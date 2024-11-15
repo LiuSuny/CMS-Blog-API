@@ -131,7 +131,8 @@ namespace CMS.API.Controllers
         // PUT: {apibaseurl}/api/blogposts/{id}
         [HttpPut]
         [Route("{id:Guid}")]
-        public async Task<IActionResult> UpdateBlogPostById([FromRoute] Guid id, UpdateBlogPostRequestDto request)
+        public async Task<IActionResult> UpdateBlogPostById([FromRoute] Guid id,
+            UpdateBlogPostRequestDto request)
         {
             // Convert DTO to Domain Model
             var blogPost = new BlogPost
