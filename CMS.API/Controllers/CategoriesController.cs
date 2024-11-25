@@ -1,25 +1,16 @@
-﻿using CMS.API.Data;
-using CMS.API.Models.Domain;
+﻿using CMS.API.Models.Domain;
 using CMS.API.Models.DTO;
-using CMS.API.Repositories.Implementation;
 using CMS.API.Repositories.Interface;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CMS.API.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class CategoriesController : ControllerBase
-    {
-        private readonly ICategoryRepository _categoryRepository;
-
-        public CategoriesController(ICategoryRepository categoryRepository)
-        {
-            _categoryRepository = categoryRepository;
-        }
+    public class CategoriesController(ICategoryRepository _categoryRepository) : BaseApiController
+      {
 
         [HttpPost]
+        //[Authorize(Roles = "Writer")]
         public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryRequestDto request)
         {
             // Map DTO to Domain Model
@@ -43,9 +34,14 @@ namespace CMS.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllCategory()
+        public async Task<IActionResult> GetAllCategory([FromQuery] string? query,
+            [FromQuery] string? sortBy,
+             [FromQuery] string? sortDirection,
+            [FromQuery] int? pageNumber,
+            [FromQuery] int? pageSize)
         {
-            var categories = await _categoryRepository.GetAllAsync();
+            var categories = await _categoryRepository
+               .GetAllAsync(query, sortBy, sortDirection,  pageNumber, pageSize);
             //map domain models to dto
             var response = new List<CategoryDto>();
             foreach(var category in categories)
@@ -82,6 +78,7 @@ namespace CMS.API.Controllers
         // PUT: https://localhost:7226/api/categories/{id}
         [HttpPut]
         [Route("{id:Guid}")]
+        [Authorize(Roles = "Writer")]
         public async Task<IActionResult> EditCategory([FromRoute] Guid id, [FromBody]UpdateCategoryRequestDto request)
         {
             // Convert DTO to Domain Model
@@ -108,6 +105,7 @@ namespace CMS.API.Controllers
 
         // DELETE: https://localhost:7226/api/categories/{id}
         [HttpDelete]
+        [Authorize(Roles = "Writer")]
         [Route("{id:Guid}")]
         public async Task<IActionResult> DeleteCategory([FromRoute] Guid id)
         {
@@ -124,6 +122,16 @@ namespace CMS.API.Controllers
                 UrlHandle = category.UrlHandle
             };
             return Ok(response);
+        }
+
+          // GET: https://localhost:7226/api/categories/count
+        [HttpGet]
+        [Route("count")]
+        //[Authorize(Roles = "Writer")]
+        public async Task<IActionResult> GetCategoriesTotal()
+        {
+            var count = await _categoryRepository.GetCount();
+            return Ok(count);
         }
     }
 }

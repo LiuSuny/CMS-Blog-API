@@ -3,19 +3,19 @@ using CMS.API.Models.Domain;
 using CMS.API.Models.DTO;
 using CMS.API.Repositories.Implementation;
 using CMS.API.Repositories.Interface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CMS.API.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
     public class BlogPostsController(IBlogPostRepository blogPostRepository,
-        ICategoryRepository categoryRepository) : ControllerBase
+        ICategoryRepository categoryRepository) :BaseApiController
     {
 
         // POST: {apibaseurl}/api/blogposts
         [HttpPost]
+        [Authorize(Roles = "Writer")]
         public async Task<IActionResult> CreateBlogPost([FromBody] CreateBlogPostRequestDto request)
         {
             // Convert DTO to DOmain
@@ -126,11 +126,45 @@ namespace CMS.API.Controllers
             };
             return Ok(response);
         }
-       
+
+        // GET: {apibaseurl}/api/blogPosts/{urlhandle}
+        [HttpGet]
+        [Route("{urlHandle}")]
+        public async Task<IActionResult> GetBlogPostByUrlHandle([FromRoute] string urlHandle)
+        {
+            // Get blogpost details from repository
+            var blogPost = await blogPostRepository.GetByUrlHandleAsync(urlHandle);
+            if (blogPost is null)
+            {
+                return NotFound();
+            }
+            
+            // Convert Domain Model to DTO
+            var response = new BlogPostDto
+            {
+                Id = blogPost.Id,
+                Author = blogPost.Author,
+                Content = blogPost.Content,
+                FeaturedImageUrl = blogPost.FeaturedImageUrl,
+                IsVisible = blogPost.IsVisible,
+                PublishedDate = blogPost.PublishedDate,
+                ShortDescription = blogPost.ShortDescription,
+                Title = blogPost.Title,
+                UrlHandle = blogPost.UrlHandle,
+                Categories = blogPost.Categories.Select(x => new CategoryDto
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    UrlHandle = x.UrlHandle
+                }).ToList()
+            };
+            return Ok(response);
+        }
 
         // PUT: {apibaseurl}/api/blogposts/{id}
         [HttpPut]
         [Route("{id:Guid}")]
+        [Authorize(Roles = "Writer")]
         public async Task<IActionResult> UpdateBlogPostById([FromRoute] Guid id,
             UpdateBlogPostRequestDto request)
         {
@@ -187,6 +221,7 @@ namespace CMS.API.Controllers
 
         // DELETE: {apibaseurl}/api/blogposts/{id}
         [HttpDelete]
+        [Authorize(Roles = "Writer")]
         [Route("{id:Guid}")]
         public async Task<IActionResult> DeleteBlogPost([FromRoute] Guid id)
         {
